@@ -34,7 +34,7 @@ const initHttpServer = (httpPort: number) => {
 
 	// Start HTTP server
 	app.listen(httpPort, () => {
-		console.log(`HTTP server running on port ${httpPort}`);
+		console.log(`\nHTTP server running on port ${httpPort}`);
 	});
 };
 

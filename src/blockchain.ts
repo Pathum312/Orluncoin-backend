@@ -116,7 +116,7 @@ const generateBlock = ({ transactions }: { transactions: string }): Block => {
 	});
 
 	// Add the new block to the blockchain
-	if (!addBlock({ newBlock })) console.error('Failed to generate block');
+	if (!addBlock({ newBlock })) console.error('\nFailed to generate block');
 
 	// Broadcast the latest block to connected peers
 	broadcastMessage(responseLatestMsg());
@@ -185,27 +185,27 @@ const validateNewBlock = ({
 }): boolean => {
 	// Validate the block structure
 	if (!validateBlockStructure({ block: newBlock })) {
-		console.error('Invalid block structure:', newBlock);
+		console.error('\nInvalid block structure:', newBlock);
 		return false;
 	}
 
 	// Validate the block index
 	if (newBlock.index !== previousBlock.index + 1) {
 		console.error(
-			`Invalid block index. Expected: ${previousBlock.index + 1}, Found: ${newBlock.index}`
+			`\nInvalid block index. Expected: ${previousBlock.index + 1}, Found: ${newBlock.index}`
 		);
 		return false;
 	}
 
 	// Validate the previous hash
 	if (newBlock.previousHash !== previousBlock.hash) {
-		console.error('Invalid previous hash:', newBlock.previousHash);
+		console.error('\nInvalid previous hash:', newBlock.previousHash);
 		return false;
 	}
 
 	// Validate the block hash
 	if (generateHashForBlock({ block: newBlock }) !== newBlock.hash) {
-		console.error('Invalid block hash:', newBlock.hash);
+		console.error('\nInvalid block hash:', newBlock.hash);
 		return false;
 	}
 

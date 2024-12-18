@@ -25,16 +25,16 @@ const initP2PServer = (p2pPort: number) => {
 	const server = new WebSocketServer({ port: p2pPort });
 
 	server.on('connection', (socket) => {
-		console.log(`New peer connected`);
+		console.log(`\nNew peer connected`);
 		initConnection(socket);
 	});
 
 	server.on('listening', () => {
-		console.log(`WebSocket P2P server running on port ${p2pPort}`);
+		console.log(`\nWebSocket P2P server running on port ${p2pPort}`);
 	});
 
 	server.on('error', (error) => {
-		console.error(`WebSocket server error: ${error.message}`);
+		console.error(`\nWebSocket server error: ${error.message}`);
 	});
 };
 
@@ -55,7 +55,7 @@ const getSockets = (): WebSocket[] => {
  */
 const initConnection = (socket: WebSocket): void => {
 	sockets.add(socket);
-	console.log(`Connected peers: ${sockets.size}`);
+	console.log(`\nConnected peers: ${sockets.size}`);
 
 	socket.on('message', (data) => handleMessage(socket, data.toString()));
 	socket.on('close', () => closeConnection(socket));
@@ -70,9 +70,9 @@ const initConnection = (socket: WebSocket): void => {
  * @param socket The WebSocket connection to close.
  */
 const closeConnection = (socket: WebSocket) => {
-	console.log('Peer disconnected');
+	console.log('\nPeer disconnected');
 	sockets.delete(socket);
-	console.log(`Remaining peers: ${sockets.size}`);
+	console.log(`\nRemaining peers: ${sockets.size}`);
 };
 
 /**
@@ -85,7 +85,7 @@ const closeConnection = (socket: WebSocket) => {
 const handleMessage = (socket: WebSocket, rawData: string) => {
 	try {
 		const message: Message = JSON.parse(rawData);
-		console.log(`Received message: ${JSON.stringify(message)}`);
+		console.log(`\nReceived message: ${JSON.stringify(message)}`);
 
 		switch (message.type) {
 			case MessageType.QUERY_LATEST:
@@ -98,10 +98,10 @@ const handleMessage = (socket: WebSocket, rawData: string) => {
 				handleBlockchainResponse(message.data);
 				break;
 			default:
-				console.error(`Unknown message type: ${message.type}`);
+				console.error(`\nUnknown message type: ${message.type}`);
 		}
 	} catch (error) {
-		console.error(`Invalid message received: ${rawData}`);
+		console.error(`\nInvalid message received: ${rawData}`);
 	}
 };
 
@@ -115,7 +115,7 @@ const sendMessage = (socket: WebSocket, message: Message) => {
 	try {
 		socket.send(JSON.stringify(message));
 	} catch (error: Error | any) {
-		console.error(`Error sending message: ${error.message}`);
+		console.error(`\nError sending message: ${error.message}`);
 	}
 };
 
@@ -162,7 +162,7 @@ const responseLatestMsg = (): Message => ({
 const handleBlockchainResponse = (data: string) => {
 	const receivedBlocks: Block[] | null = parseJSON<Block[]>(data);
 	if (!receivedBlocks) {
-		console.error(`Invalid blockchain data: ${data}`);
+		console.error(`\nInvalid blockchain data: ${data}`);
 		return;
 	}
 
@@ -171,7 +171,7 @@ const handleBlockchainResponse = (data: string) => {
 
 	if (latestBlockReceived.index > latestBlockHeld.index) {
 		console.log(
-			`Blockchain potentially outdated. Local: ${latestBlockHeld.index}, Peer: ${latestBlockReceived.index}`
+			`\nBlockchain potentially outdated. Local: ${latestBlockHeld.index}, Peer: ${latestBlockReceived.index}`
 		);
 
 		if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
@@ -179,14 +179,14 @@ const handleBlockchainResponse = (data: string) => {
 				broadcastMessage(responseLatestMsg());
 			}
 		} else if (receivedBlocks.length === 1) {
-			console.log('Querying full chain from peer');
+			console.log('\nQuerying full chain from peer');
 			broadcastMessage(queryAllMsg());
 		} else {
-			console.log('Replacing current chain with received chain');
+			console.log('\nReplacing current chain with received chain');
 			replaceChain(receivedBlocks);
 		}
 	} else {
-		console.log('Received chain is not longer. No action taken.');
+		console.log('\nReceived chain is not longer. No action taken.');
 	}
 };
 
@@ -201,15 +201,15 @@ const connectToPeer = (peerUrl: string) => {
 		const socket = new WebSocket(peerUrl);
 
 		socket.on('open', () => {
-			console.log(`Connected to peer: ${peerUrl}`);
+			console.log(`\nConnected to peer: ${peerUrl}`);
 			initConnection(socket);
 		});
 
 		socket.on('error', (error) => {
-			console.error(`Connection error with peer ${peerUrl}: ${error.message}`);
+			console.error(`\nConnection error with peer ${peerUrl}: ${error.message}`);
 		});
 	} catch (error: Error | any) {
-		console.error(`Failed to connect to peer ${peerUrl}: ${error.message}`);
+		console.error(`\nFailed to connect to peer ${peerUrl}: ${error.message}`);
 	}
 };
 
@@ -228,7 +228,7 @@ const parseJSON = <T>(data: string): T | null => {
 	try {
 		return JSON.parse(data);
 	} catch {
-		console.error(`Failed to parse JSON: ${data}`);
+		console.error(`\nFailed to parse JSON: ${data}`);
 		return null;
 	}
 };
