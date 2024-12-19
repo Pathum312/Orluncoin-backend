@@ -2,8 +2,11 @@ import { Block } from './block';
 import sha256 from 'crypto-js/sha256';
 import { hexToBinary } from './utils';
 import { broadcastMessage, responseLatestMsg } from './p2p';
+import { UnspentTxOut, Transaction, processTransactions } from './transaction';
 
 let blockchain: Block[] = [];
+
+let unspentTxOuts: UnspentTxOut[] = []; // List of unspent transaction outputs
 
 const BLOCK_GENERATION_INTERVAL = 10; // Number of blocks to generate per interval (10 seconds)
 
@@ -27,7 +30,7 @@ const createGenesisBlock = (): Block => {
 	const genesisData = {
 		index: 0,
 		timestamp,
-		transactions: '',
+		transactions: [],
 		previousHash: '',
 		difficulty: 0,
 		proof: 0,
@@ -63,7 +66,7 @@ const generateHash = ({
 	index: number;
 	previousHash: string;
 	timestamp: number;
-	transactions: string;
+	transactions: Transaction[];
 	difficulty: number;
 	proof: number;
 }): string => {
@@ -115,7 +118,7 @@ const getLastBlock = (): Block => {
  *
  * @returns The newly generated block.
  */
-const generateBlock = ({ transactions }: { transactions: string }): Block => {
+const generateBlock = ({ transactions }: { transactions: Transaction[] }): Block => {
 	const lastBlock = getLastBlock();
 	const timestamp = Date.now();
 	const difficulty = getDifficulty(blockchain);
@@ -151,8 +154,21 @@ const addBlock = ({ newBlock }: { newBlock: Block }): boolean => {
 	// Validate the new block structure and data
 	if (!validateNewBlock({ newBlock, previousBlock: getLastBlock() })) return false;
 
+	//  Process the transactions and get the referenced unspent transaction outputs
+	const referencedUTxO = processTransactions({
+		transactions: newBlock.transactions,
+		unspentTxOuts,
+		blockIndex: newBlock.index,
+	});
+
+	// If there are no referenced unspent transaction outputs, return false
+	if (referencedUTxO === null) return false;
+
 	// Add the new block to the blockchain
 	blockchain.push(newBlock);
+
+	// Update the list of unspent transaction outputs
+	unspentTxOuts = referencedUTxO;
 
 	return true;
 };
@@ -177,7 +193,7 @@ const validateBlockStructure = ({ block }: { block: Block }): boolean => {
 		typeof block.hash === 'string' &&
 		typeof block.previousHash === 'string' &&
 		typeof block.timestamp === 'number' &&
-		typeof block.transactions === 'string'
+		typeof block.transactions === 'object'
 	);
 };
 
@@ -390,7 +406,7 @@ const findBlock = ({
 	index: number;
 	previousHash: string;
 	timestamp: number;
-	transactions: string;
+	transactions: Transaction[];
 	difficulty: number;
 }): Block => {
 	let proof = 0;

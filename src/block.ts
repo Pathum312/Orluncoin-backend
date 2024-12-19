@@ -1,7 +1,9 @@
+import { Transaction } from './transaction';
+
 class Block {
 	public index: number; // Block ID
 	public timestamp: number; // Time of block creation
-	public transactions: string; // List of transactions
+	public transactions: Transaction[]; // List of transactions
 	public hash: string; // Hash of the block
 	public previousHash: string; // Hash of the previous block
 	public difficulty: number; // Difficulty level of PoW challenge
