@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import { initP2PServer } from './p2p';
+import { initWallet } from './wallet';
 import BlockchainController from './containers/blockchain.container';
 
 // Set default ports or use environment variables
@@ -41,3 +42,4 @@ const initHttpServer = (httpPort: number) => {
 // Initialize servers
 initHttpServer(HTTP_PORT);
 initP2PServer(P2P_PORT);
+initWallet();

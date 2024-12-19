@@ -2,7 +2,14 @@ import { Block } from './block';
 import sha256 from 'crypto-js/sha256';
 import { hexToBinary } from './utils';
 import { broadcastMessage, responseLatestMsg } from './p2p';
-import { UnspentTxOut, Transaction, processTransactions } from './transaction';
+import { createTransaction, getBalance, getPrivateFromWallet, getPublicFromWallet } from './wallet';
+import {
+	getCoinbaseTransaction,
+	validateAddress,
+	processTransactions,
+	Transaction,
+	UnspentTxOut,
+} from './transaction';
 
 let blockchain: Block[] = [];
 
@@ -118,7 +125,7 @@ const getLastBlock = (): Block => {
  *
  * @returns The newly generated block.
  */
-const generateBlock = ({ transactions }: { transactions: Transaction[] }): Block => {
+const generateRawBlock = ({ transactions }: { transactions: Transaction[] }): Block => {
 	const lastBlock = getLastBlock();
 	const timestamp = Date.now();
 	const difficulty = getDifficulty(blockchain);
@@ -141,6 +148,75 @@ const generateBlock = ({ transactions }: { transactions: Transaction[] }): Block
 	broadcastMessage(responseLatestMsg());
 
 	return newBlock;
+};
+
+/**
+ * Generates a new block with a single coinbase transaction and adds it to the blockchain.
+ *
+ * The coinbase transaction is created with the current public key from the wallet and the next block index.
+ *
+ * @returns The newly generated block.
+ */
+
+const generateBlock = (): Block => {
+	// Create the coinbase transaction
+	const transaction: Transaction = getCoinbaseTransaction({
+		address: getPublicFromWallet(),
+		blockIndex: getLastBlock().index + 1,
+	});
+
+	return generateRawBlock({ transactions: [transaction] });
+};
+
+/**
+ * Generates a new block with a single coinbase transaction and a single transaction with the given amount
+ * and adds it to the blockchain.
+ *
+ * @param address The address to which the transaction is sent.
+ * @param amount The amount of the transaction in Satoshis.
+ *
+ * @returns The newly generated block.
+ */
+const generateBlockWithTransaction = ({
+	address,
+	amount,
+}: {
+	address: string;
+	amount: number;
+}): Block => {
+	// Check if the address is valid
+	if (!validateAddress({ address })) console.error('\nInvalid address');
+
+	// Check if the amount is valid
+	if (typeof amount !== 'number') console.error('\nAmount must be a number');
+
+	// Create the coinbase transaction
+	const coinbaseTx: Transaction = getCoinbaseTransaction({
+		address: getPublicFromWallet(),
+		blockIndex: getLastBlock().index + 1,
+	});
+
+	// Create the transaction
+	const transaction: Transaction = createTransaction({
+		receiverAddress: address,
+		amount,
+		privateKey: getPrivateFromWallet(),
+		unspentTxOuts,
+	});
+
+	// Add the transactions to the payload
+	const transactions: Transaction[] = [coinbaseTx, transaction];
+
+	return generateRawBlock({ transactions });
+};
+
+/**
+ * Retrieves the balance of the account with the public key in the wallet.
+ *
+ * @returns The balance of the account in Satoshis.
+ */
+const accountBalance = (): number => {
+	return getBalance({ address: getPublicFromWallet(), unspentTxOuts });
 };
 
 /**
@@ -464,4 +540,14 @@ const getAccumulatedDifficulty = (blockchain: Block[]): number => {
 		.reduce((a, b) => a + b, 0);
 };
 
-export { getLastBlock, getBlockchain, addBlock, replaceChain, initializeChain, generateBlock };
+export {
+	getLastBlock,
+	getBlockchain,
+	addBlock,
+	replaceChain,
+	initializeChain,
+	generateBlock,
+	generateBlockWithTransaction,
+	accountBalance,
+	generateRawBlock,
+};

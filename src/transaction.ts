@@ -127,6 +127,9 @@ const signTxIn = ({
 
 	if (!referencedUTxOut) throw new Error('Referenced unspent transaction output not found.');
 
+	if (getPublicKey({ privateKey }) !== referencedUTxOut.address)
+		throw new Error('Trying to sign an input with an invalid private key.');
+
 	// Verify that the private key corresponds to the address in the referenced UTxO
 	const key = ec.keyFromPrivate(privateKey, 'hex');
 
@@ -476,4 +479,96 @@ const updateUnspentTxOuts = ({
 	];
 };
 
-export { processTransactions, signTxIn, getTransactionId, UnspentTxOut, TxIn, TxOut, Transaction };
+/**
+ * Retrieves the public key associated with a given private key.
+ *
+ * @param privateKey The private key to derive the public key from.
+ *
+ * @returns The public key as a hexadecimal string.
+ */
+const getPublicKey = ({ privateKey }: { privateKey: string }): string => {
+	return ec.keyFromPrivate(privateKey, 'hex').getPublic().encode('hex', false);
+};
+
+/**
+ * Generates a coinbase transaction, which is a special transaction that is the first transaction
+ * in a block and is used to reward the miner for mining the block.
+ *
+ * @param address The address of the miner who mined the block.
+ * @param blockIndex The index of the block containing the transaction.
+ *
+ * @returns The generated coinbase transaction.
+ */
+const getCoinbaseTransaction = ({
+	address,
+	blockIndex,
+}: {
+	address: string;
+	blockIndex: number;
+}): Transaction => {
+	// Create the coinbase transaction
+	const transaction = new Transaction();
+
+	// Add the coinbase transaction input
+	const txIn: TxIn = new TxIn();
+	txIn.signature = '';
+	txIn.txOutId = '';
+	txIn.txOutIndex = blockIndex;
+
+	// Add the coinbase transaction input to the transaction
+	transaction.txIns = [txIn];
+
+	// Add the coinbase transaction output to the transaction
+	transaction.txOuts = [new TxOut({ address, amount: COINBASE_AMOUNT })];
+
+	// Set the transaction ID
+	transaction.id = getTransactionId({ transaction });
+
+	return transaction;
+};
+
+/**
+ * Validates a given address.
+ *
+ * This function checks if the length of the public key is correct, if it contains only hex characters,
+ * and if it starts with 04.
+ *
+ * @param address The address to validate
+ *
+ * @returns {boolean} Whether the address is valid
+ */
+
+const validateAddress = ({ address }: { address: string }): boolean => {
+	// Check if the length of the public key is correct
+	if (address.length !== 130) {
+		console.log('invalid public key length');
+		return false;
+	}
+
+	// Check if the public key contains only hex characters
+	if (address.match('^[a-fA-F0-9]+$') === null) {
+		console.log('public key must contain only hex characters');
+		return false;
+	}
+
+	// Check if the public key starts with 04
+	if (!address.startsWith('04')) {
+		console.log('Public key must start with 04');
+		return false;
+	}
+
+	return true;
+};
+
+export {
+	processTransactions,
+	signTxIn,
+	getTransactionId,
+	UnspentTxOut,
+	TxIn,
+	TxOut,
+	Transaction,
+	getPublicKey,
+	getCoinbaseTransaction,
+	validateAddress,
+};
