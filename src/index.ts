@@ -3,6 +3,7 @@ import express from 'express';
 import { initP2PServer } from './p2p';
 import { initWallet } from './wallet';
 import BlockchainController from './containers/blockchain.container';
+import { specs, swaggerUI } from './swagger/swagger';
 
 // Set default ports or use environment variables
 const HTTP_PORT = parseInt(process.env.HTTP_PORT || '3000', 10);
@@ -30,12 +31,17 @@ const initHttpServer = (httpPort: number) => {
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
 
+	// Swagger Documentation
+	app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(specs));
+
 	// API Routes
 	app.use('/blockchain', BlockchainController);
 
 	// Start HTTP server
 	app.listen(httpPort, () => {
-		console.log(`\nHTTP server running on port ${httpPort}`);
+		console.log(
+			`\nHTTP server running on port ${httpPort}.\n\nAPI documentation available at http://localhost:${httpPort}/api-docs`
+		);
 	});
 };
 
