@@ -3,7 +3,6 @@ import { connectToPeer, getSockets } from '../p2p';
 import express, { Request, Response } from 'express';
 import {
 	getBlockchain,
-	initializeChain,
 	generateBlock,
 	generateRawBlock,
 	generateBlockWithTransaction,
@@ -18,11 +17,36 @@ import { getPublicFromWallet } from '../wallet';
 // Initialize router
 const router = express.Router();
 
-// Initialize blockchain
-// initializeChain();
-
 router.get('/blocks', (req: Request, res: Response) => {
 	res.status(200).json(getBlockchain());
+});
+
+router.get('/blocks/:hash', (req: Request, res: Response) => {
+	const { hash } = req.params;
+
+	const block = getBlockchain().find((block) => block.hash === hash);
+
+	res.status(200).json(block);
+});
+
+router.get('/transaction/:id', (req: Request, res: Response) => {
+	const { id } = req.params;
+
+	const blockchain = getBlockchain();
+
+	const transaction = blockchain
+		.flatMap((block) => block.transactions)
+		.find((transaction) => transaction.id === id);
+
+	res.status(200).json(transaction);
+});
+
+router.get('/address/:address', (req: Request, res: Response) => {
+	const { address } = req.params;
+
+	const unspentTxOuts = getUnspentTxOuts().filter((uTxO) => uTxO.address === address);
+
+	res.status(200).json({ unspentTxOuts });
 });
 
 router.get('/address', (req: Request, res: Response) => {
