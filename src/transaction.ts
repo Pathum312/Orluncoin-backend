@@ -193,6 +193,9 @@ const validateTransaction = ({
 	transaction: Transaction;
 	unspentTxOuts: UnspentTxOut[];
 }): boolean => {
+	// Check the transaction structure
+	if (!validateTransactionStructure({ transaction })) return false;
+
 	// Check if the transaction has the correct ID
 	if (getTransactionId({ transaction }) !== transaction.id) {
 		console.log(`Invalid transaction ID: ${transaction.id}`);
@@ -560,6 +563,134 @@ const validateAddress = ({ address }: { address: string }): boolean => {
 	return true;
 };
 
+/**
+ * Validates the structure of a transaction.
+ *
+ * This function checks that the transaction has the required fields, and that the fields
+ * have the correct types. Specifically, it checks that the transaction has a valid ID,
+ * an array of transaction inputs, and an array of transaction outputs. It also checks
+ * that each transaction input and each transaction output has a valid structure.
+ *
+ * @param {Object} transaction The transaction to validate.
+ *
+ * @returns {boolean} Whether the transaction has a valid structure.
+ */
+const validateTransactionStructure = ({ transaction }: { transaction: Transaction }): boolean => {
+	// Check if the transaction id is a string
+	if (typeof transaction.id !== 'string') {
+		console.log('Transaction ID missing or invalid');
+		return false;
+	}
+
+	// Check if the transaction inputs is an array
+	if (!Array.isArray(transaction.txIns)) {
+		console.log('Invalid txIns type in transaction');
+		return false;
+	}
+
+	// Check if each transaction input has a valid structure
+	if (!transaction.txIns.every((txIn) => validateTxInStructure({ txIn }))) {
+		console.log('Invalid structure in one or more txIns');
+		return false;
+	}
+
+	// Check if the transaction outputs is an array
+	if (!Array.isArray(transaction.txOuts)) {
+		console.log('Invalid txOuts type in transaction');
+		return false;
+	}
+
+	// Check if each transaction output has a valid structure
+	if (!transaction.txOuts.every((txOut) => validateTxOutStructure({ txOut }))) {
+		console.log('Invalid structure in one or more txOuts');
+		return false;
+	}
+
+	return true;
+};
+
+/**
+ * Validates the structure of a transaction input.
+ *
+ * This function checks if the given transaction input (txIn) has a valid structure
+ * by ensuring that it is not null or undefined and that its fields have the correct types.
+ * Specifically, it validates that:
+ * - The signature is of type string.
+ * - The txOutId is of type string.
+ * - The txOutIndex is of type number.
+ *
+ * @param txIn The transaction input to validate.
+ *
+ * @returns {boolean} Whether the structure of the transaction input is valid.
+ */
+const validateTxInStructure = ({ txIn }: { txIn: TxIn }): boolean => {
+	// Check if txIn is null or undefined
+	if (!txIn) {
+		console.log('txIn is null or undefined');
+		return false;
+	}
+
+	// Check if the signature is of type string
+	if (typeof txIn.signature !== 'string') {
+		console.log('Invalid signature type in txIn');
+		return false;
+	}
+
+	// Check if the txOutId is of type string
+	if (typeof txIn.txOutId !== 'string') {
+		console.log('Invalid txOutId type in txIn');
+		return false;
+	}
+
+	// Check if the txOutIndex is of type number
+	if (typeof txIn.txOutIndex !== 'number') {
+		console.log('Invalid txOutIndex type in txIn');
+		return false;
+	}
+
+	return true;
+};
+
+/**
+ * Validates the structure of a transaction output.
+ *
+ * This function ensures that the given transaction output (txOut) is not null or undefined
+ * and that its fields have the correct types. Specifically, it validates that:
+ * - The address is of type string and is a valid address.
+ * - The amount is of type number.
+ *
+ * @param txOut The transaction output to validate.
+ *
+ * @returns {boolean} Whether the structure of the transaction output is valid.
+ */
+const validateTxOutStructure = ({ txOut }: { txOut: TxOut }): boolean => {
+	// Check if txOut is not null or undefined
+	if (!txOut) {
+		console.log('txOut is null or undefined');
+		return false;
+	}
+
+	// Check if address is of type string
+	if (typeof txOut.address !== 'string') {
+		console.log('Invalid address type in txOut');
+		return false;
+	}
+
+	// Check if address is a valid address
+	if (!validateAddress({ address: txOut.address })) {
+		console.log('Invalid TxOut address');
+		return false;
+	}
+
+	// Check if amount is of type number
+	if (typeof txOut.amount !== 'number') {
+		console.log('Invalid amount type in txOut');
+		return false;
+	}
+
+	return true;
+};
+
 export {
 	processTransactions,
 	signTxIn,
@@ -571,4 +702,5 @@ export {
 	getPublicKey,
 	getCoinbaseTransaction,
 	validateAddress,
+	validateTransaction,
 };

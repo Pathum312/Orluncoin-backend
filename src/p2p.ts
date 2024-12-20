@@ -1,6 +1,15 @@
 import WebSocket, { WebSocketServer } from 'ws';
 import { Block } from './block';
-import { getLastBlock, getBlockchain, addBlock, replaceChain } from './blockchain';
+import {
+	getLastBlock,
+	getBlockchain,
+	addBlock,
+	replaceChain,
+	handleReceivedTransaction,
+	validateBlockStructure,
+} from './blockchain';
+import { Transaction } from './transaction';
+import { getTransactionPool } from './transactionPool';
 
 const sockets: Set<WebSocket> = new Set();
 
@@ -8,6 +17,8 @@ enum MessageType {
 	QUERY_LATEST = 0,
 	QUERY_ALL = 1,
 	RESPONSE_BLOCKCHAIN = 2,
+	QUERY_TRANSACTION_POOL = 3,
+	RESPONSE_TRANSACTION_POOL = 4,
 }
 
 interface Message {
@@ -62,6 +73,8 @@ const initConnection = (socket: WebSocket): void => {
 	socket.on('error', () => closeConnection(socket));
 
 	sendMessage(socket, queryChainLengthMsg());
+
+	setTimeout(() => broadcastMessage(queryTransactionPoolMsg()), 500);
 };
 
 /**
@@ -97,6 +110,23 @@ const handleMessage = (socket: WebSocket, rawData: string) => {
 			case MessageType.RESPONSE_BLOCKCHAIN:
 				handleBlockchainResponse(message.data);
 				break;
+			case MessageType.QUERY_TRANSACTION_POOL:
+				sendMessage(socket, responseTransactionPoolMsg());
+				break;
+			case MessageType.RESPONSE_TRANSACTION_POOL:
+				const receivedTransactions: Transaction[] = JSON.parse(message.data);
+
+				try {
+					// Process all transactions
+					for (const transaction of receivedTransactions) {
+						handleReceivedTransaction({ transaction });
+					}
+
+					// Broadcast the transaction pool after processing all transactions
+					broadcastTransactionPool();
+				} catch (error: Error | any) {
+					console.error(`\nError handling transaction: ${error.message}`);
+				}
 			default:
 				console.error(`\nUnknown message type: ${message.type}`);
 		}
@@ -167,6 +197,12 @@ const handleBlockchainResponse = (data: string) => {
 	}
 
 	const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
+
+	if (!validateBlockStructure({ block: latestBlockReceived })) {
+		console.error(`\nInvalid block structure: ${JSON.stringify(latestBlockReceived)}`);
+		return;
+	}
+
 	const latestBlockHeld = getLastBlock();
 
 	if (latestBlockReceived.index > latestBlockHeld.index) {
@@ -233,4 +269,40 @@ const parseJSON = <T>(data: string): T | null => {
 	}
 };
 
-export { initP2PServer, getSockets, connectToPeer, broadcastMessage, responseLatestMsg };
+/**
+ * Creates a message to query the transaction pool from a peer.
+ *
+ * @returns A Message object with the type set to QUERY_TRANSACTION_POOL and data set to null.
+ */
+const queryTransactionPoolMsg = (): Message => ({
+	type: MessageType.QUERY_TRANSACTION_POOL,
+	data: null,
+});
+
+/**
+ * Creates a message to respond to a transaction pool query from a peer.
+ *
+ * This message includes the current transaction pool.
+ *
+ * @returns A Message object with the type set to RESPONSE_TRANSACTION_POOL and data set to the JSON string representation of the transaction pool.
+ */
+const responseTransactionPoolMsg = (): Message => ({
+	type: MessageType.RESPONSE_TRANSACTION_POOL,
+	data: JSON.stringify(getTransactionPool()),
+});
+
+/**
+ * Broadcasts the current transaction pool to all connected peers.
+ */
+const broadcastTransactionPool = () => {
+	broadcastMessage(responseTransactionPoolMsg());
+};
+
+export {
+	initP2PServer,
+	getSockets,
+	connectToPeer,
+	broadcastMessage,
+	responseLatestMsg,
+	broadcastTransactionPool,
+};
