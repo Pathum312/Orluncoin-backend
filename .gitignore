@@ -1,2 +1,2 @@
 node_modules
-/wallet/private_key
+/wallet/private*_key

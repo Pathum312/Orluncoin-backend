@@ -19,7 +19,7 @@ import { getPublicFromWallet } from '../wallet';
 const router = express.Router();
 
 // Initialize blockchain
-initializeChain();
+// initializeChain();
 
 router.get('/blocks', (req: Request, res: Response) => {
 	res.status(200).json(getBlockchain());
@@ -56,9 +56,25 @@ router.post('/mine-transaction', (req: Request, res: Response) => {
 	if (!address || !amount) res.status(400).json({ error: 'Address or amount are missing!' });
 
 	try {
-		const response = sendTransaction({ address, amount });
+		const response = generateBlockWithTransaction({ address, amount });
 
 		if (!response) res.status(500).json({ error: 'Failed to generate a new block' });
+
+		res.status(201).json(response);
+	} catch (error: Error | any) {
+		res.status(400).json({ message: error.message });
+	}
+});
+
+router.post('/send-transaction', (req: Request, res: Response) => {
+	const { address, amount } = req.body;
+
+	if (!address || !amount) res.status(400).json({ error: 'Address or amount are missing!' });
+
+	try {
+		const response = sendTransaction({ address, amount });
+
+		if (!response) res.status(500).json({ error: 'Failed send transaction.' });
 
 		res.status(201).json(response);
 	} catch (error: Error | any) {

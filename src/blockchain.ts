@@ -18,7 +18,35 @@ import {
 } from './transaction';
 import { addToTransactionPool, getTransactionPool, updateTransactionPool } from './transactionPool';
 
-let blockchain: Block[] = [];
+const genesisBlock: Block = new Block({
+	index: 0,
+	timestamp: 1734667274522,
+	transactions: [
+		{
+			txIns: [
+				{
+					signature: '',
+					txOutId: '',
+					txOutIndex: 0,
+				},
+			],
+			txOuts: [
+				{
+					address:
+						'04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
+					amount: 50,
+				},
+			],
+			id: 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3',
+		},
+	],
+	hash: '45dcbece109d098f2764e371d20e29c5ef3dcc10d985c6bc8d563d1fbdc82d9e',
+	previousHash: '',
+	difficulty: 0,
+	proof: 0,
+});
+
+let blockchain: Block[] = [genesisBlock];
 
 // List of unspent transaction outputs
 let unspentTxOuts: UnspentTxOut[] = processTransactions({

@@ -9,10 +9,9 @@ import {
 	TxOut,
 	UnspentTxOut,
 } from './transaction';
-import { table } from 'console';
 
 const EC = new ec('secp256k1');
-const privateKeyLocation = process.env.PRIVATE_KEY || 'node/wallet/private_key';
+const privateKeyLocation = process.env.PRIVATE_KEY || 'wallet/private_key';
 
 const getPrivateFromWallet = (): string => {
 	const buffer = readFileSync(privateKeyLocation, 'utf8');

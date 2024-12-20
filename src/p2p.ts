@@ -127,6 +127,8 @@ const handleMessage = (socket: WebSocket, rawData: string) => {
 				} catch (error: Error | any) {
 					console.error(`\nError handling transaction: ${error.message}`);
 				}
+
+				break;
 			default:
 				console.error(`\nUnknown message type: ${message.type}`);
 		}
